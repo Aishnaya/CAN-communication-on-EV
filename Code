@@ -1,0 +1,210 @@
+#include <mcp_can.h>
+#include <SPI.h>
+long unsigned int rxId;
+unsigned char len = 0;
+unsigned char rxBuf[8];
+long int num=0;
+double dist=0;
+double distance=0;
+double wheel_rpm=0;
+double Speed=0;
+unsigned long previous_time=0;
+unsigned long current_time=0;
+double seconds=0;
+
+MCP_CAN CAN0(10);                            
+void setup()
+{
+ 
+  Serial.begin(115200);
+  CAN0.begin(CAN_500KBPS);                      
+ 
+  Serial.println("CAN init");
+}
+
+void battery()
+{
+unsigned char len = 0;
+unsigned char buf1[8];
+  CAN0.readMsgBuf(&len, buf1);
+
+      rxId = CAN0.getCanId();            
+
+      for(int i = 0; i<len; i++)                
+      {
+      }
+
+      if (rxId==0x10F8108D)
+      {
+              Serial.print(" battery:  ");
+     num=buf1[1]*256+buf1[0];
+     Serial.print(num/10,DEC);
+      }
+     
+}
+
+void gear()
+{
+unsigned char len = 0;
+unsigned char buf4[8];
+  CAN0.readMsgBuf(&len, buf4);
+  
+      rxId = CAN0.getCanId();                   
+
+      for(int i = 0; i<len; i++)                
+      {
+      }
+
+      if (rxId==0x10F8109A)
+      {
+
+     num=buf4[0];
+     if(num==7)
+     {
+      Serial.print(" forward");
+      }
+      
+
+      if(num==5)
+     {
+      Serial.print(" reverse");
+      }
+      if(num==0)
+     {
+      Serial.println(" neutral");
+      }
+      }
+}
+
+
+void temp()
+{
+unsigned char len = 0;
+unsigned char buf2[8];
+  CAN0.readMsgBuf(&len, buf2);
+ 
+      rxId = CAN0.getCanId();                  
+
+      for(int i = 0; i<len; i++)                
+      {
+      }
+
+      if (rxId==0x10F8109A)
+      {
+
+
+     Serial.print(" Temp: ");
+     Serial.print(buf2[5]-10,DEC);
+     Serial.print(" ");
+     Serial.print(buf2[6]-40,DEC);
+      }
+     
+}
+
+void current()
+{
+unsigned char len = 0;
+unsigned char buf3[8];
+  CAN0.readMsgBuf(&len, buf3);
+ 
+      rxId = CAN0.getCanId();                  
+
+      for(int i = 0; i<len; i++)                
+      {
+      }
+
+      if (rxId==0x10F8108D)
+      {
+              Serial.print(" current");
+     num=buf3[3]*256+buf3[2];
+     Serial.print(num/10);
+      }
+     
+}
+
+
+void faultcode()
+{
+unsigned char len = 0;
+unsigned char buf6[8];
+  CAN0.readMsgBuf(&len, buf6);
+ 
+      rxId = CAN0.getCanId();                  
+
+      for(int i = 0; i<len; i++)                
+      {
+      }
+
+      if (rxId==0x10F8109A)
+      {
+              Serial.print(" faultcode: ");
+     num=buf6[3];
+     Serial.print(num);
+      }
+     
+}
+
+void rpm()
+{
+   unsigned char len = 0;
+unsigned char buf[8];
+  CAN0.readMsgBuf(&len, buf);
+ 
+      rxId = CAN0.getCanId();                 
+
+      for(int i = 0; i<len; i++)                
+      {
+      }
+      
+  
+      
+      if (rxId==0x10F8109A)
+      {
+            Serial.print("  rpm:  ");
+     num=buf[2]*256+buf[1];
+     Serial.print(num);
+      }
+     
+}
+void odo(){
+  current_time=millis();
+seconds=(double)(current_time-previous_time)/1000;
+wheel_rpm=(double)num/(6.125*1.5);
+Speed=wheel_rpm*1.25*0.06;
+dist=Speed*seconds/3600;//distance formula using time as seconds
+distance=distance+dist;
+previous_time=current_time;
+Serial.print("  distance: ");
+Serial.print(distance);
+Serial.print("  Speed: ");
+ Serial.println(Speed);
+  }
+void loop()
+{ battery();
+  rpm();
+  temp();
+  current();
+  //faultcode();
+  //gear();
+  odo();
+//switch(rxId)
+//{
+//case 0x10F8109A:
+//{
+//num=buf[2]*256+buf[1];
+//Serial.println("rpm");
+//Serial.println(num,HEX);
+//
+//}
+//
+//case 0x10F8109D:
+//{
+//float bat=num1;
+//Serial.println("vol");
+//Serial.println(buf[0],DEC);
+//
+//}
+//}
+
+    
+}
